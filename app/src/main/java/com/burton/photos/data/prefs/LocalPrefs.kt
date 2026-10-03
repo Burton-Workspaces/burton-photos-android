@@ -23,6 +23,9 @@ data class StoredSession(
 class LocalPrefs @Inject constructor(
     @ApplicationContext private val context: Context,
 ) {
+    suspend fun origin(): String =
+        context.photosStore.data.first()[BASE_URL].orEmpty()
+
     suspend fun load(): StoredSession? {
         val prefs = context.photosStore.data.first()
         val baseUrl = prefs[BASE_URL].orEmpty()

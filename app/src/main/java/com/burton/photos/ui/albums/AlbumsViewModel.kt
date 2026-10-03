@@ -9,6 +9,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -22,12 +23,19 @@ class AlbumsViewModel @Inject constructor(
         SharingStarted.WhileSubscribed(5_000),
         emptyList(),
     )
+    val local: StateFlow<Boolean> = repository.sessionState
+        .map { it.isLocal }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), repository.isLocal)
     private val _creating = MutableStateFlow(false)
     val creating: StateFlow<Boolean> = _creating
     private val _error = MutableStateFlow<String?>(null)
     val error: StateFlow<String?> = _error
 
     init {
+        viewModelScope.launch { repository.refreshAlbums() }
+    }
+
+    fun refresh() {
         viewModelScope.launch { repository.refreshAlbums() }
     }
 
@@ -59,10 +67,22 @@ class AlbumDetailViewModel @Inject constructor(
     val album: StateFlow<Album?> = _album
     private val _error = MutableStateFlow<String?>(null)
     val error: StateFlow<String?> = _error
+    val local: StateFlow<Boolean> = repository.sessionState
+        .map { it.isLocal }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), repository.isLocal)
 
     init {
+        load()
+    }
+
+    fun reload() {
+        load()
+    }
+
+    private fun load() {
         viewModelScope.launch {
             try {
+                _error.value = null
                 _album.value = repository.album(id)
             } catch (error: Exception) {
                 _error.value = error.message

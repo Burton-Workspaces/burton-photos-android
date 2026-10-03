@@ -33,7 +33,9 @@ import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -110,29 +112,37 @@ private fun BurtonApp(
                 CircularProgressIndicator(color = BurtonSand)
             }
         }
-        is SessionState.SignedOut -> {
-            val nav = rememberNavController()
-            NavHost(navController = nav, startDestination = Routes.LOGIN) {
-                composable(Routes.LOGIN) {
-                    LoginScreen(onRegister = { nav.navigate(Routes.REGISTER) })
-                }
-                composable(Routes.REGISTER) {
-                    RegisterScreen(onBack = { nav.popBackStack() })
-                }
-            }
-        }
-        is SessionState.SignedIn -> SignedInApp(onEnqueue)
+        else -> GalleryApp(local = session.isLocal, onEnqueue = onEnqueue)
     }
 }
 
 @Composable
-private fun SignedInApp(onEnqueue: (List<Uri>) -> Unit) {
+private fun GalleryApp(local: Boolean, onEnqueue: (List<Uri>) -> Unit) {
     val navController = rememberNavController()
     val backStack by navController.currentBackStackEntryAsState()
     val route = backStack?.destination?.route
     val showBar = route in BottomTabs
     val context = LocalContext.current
     var captureUri by remember { mutableStateOf<Uri?>(null) }
+
+    LaunchedEffect(local) {
+        if (!local) {
+            val current = navController.currentDestination?.route
+            if (current == Routes.LOGIN || current == Routes.REGISTER) {
+                navController.navigate(Routes.LIBRARY) {
+                    popUpTo(navController.graph.findStartDestination().id) {
+                        saveState = true
+                    }
+                    launchSingleTop = true
+                    restoreState = true
+                }
+            }
+        }
+    }
+
+    fun openConnect() {
+        navController.navigate(Routes.LOGIN)
+    }
 
     val picker = rememberLauncherForActivityResult(
         ActivityResultContracts.PickMultipleVisualMedia(),
@@ -163,7 +173,7 @@ private fun SignedInApp(onEnqueue: (List<Uri>) -> Unit) {
             }
         },
         floatingActionButton = {
-            if (showBar) {
+            if (showBar && !local) {
                 FloatingActionButton(
                     onClick = {
                         picker.launch(
@@ -183,45 +193,75 @@ private fun SignedInApp(onEnqueue: (List<Uri>) -> Unit) {
             startDestination = Routes.LIBRARY,
             modifier = Modifier.padding(padding),
         ) {
+            composable(Routes.LOGIN) {
+                LoginScreen(
+                    onRegister = { navController.navigate(Routes.REGISTER) },
+                    onBack = { navController.popBackStack() },
+                )
+            }
+            composable(Routes.REGISTER) {
+                RegisterScreen(onBack = { navController.popBackStack() })
+            }
             composable(Routes.LIBRARY) {
                 Column(Modifier.fillMaxSize()) {
                     LibraryHeader(
+                        local = local,
                         onSearch = { navController.navigate(Routes.SEARCH) },
                         onCamera = ::openCamera,
+                        onConnect = ::openConnect,
                     )
                     LibraryScreen(
                         query = PhotoQuery(),
                         title = "",
                         onPhoto = { navController.navigate(Routes.photo(it.id)) },
+                        onConnect = ::openConnect,
                     )
                 }
             }
             composable(Routes.ALBUMS) {
-                AlbumsScreen(onAlbum = { navController.navigate(Routes.album(it)) })
+                AlbumsScreen(
+                    onAlbum = { navController.navigate(Routes.album(it)) },
+                    onConnect = ::openConnect,
+                )
             }
             composable(Routes.FAVORITES) {
                 LibraryScreen(
                     query = PhotoQuery(favorite = true),
                     title = "Favorites",
                     onPhoto = { navController.navigate(Routes.photo(it.id)) },
+                    onConnect = ::openConnect,
                 )
             }
             composable(Routes.MORE) {
-                MoreScreen(onRoute = { navController.navigate(it) })
+                MoreScreen(
+                    local = local,
+                    onRoute = { navController.navigate(it) },
+                    onConnect = ::openConnect,
+                )
             }
             composable(Routes.SEARCH) {
-                SearchScreen(onPhoto = { navController.navigate(Routes.photo(it.id)) })
+                SearchScreen(
+                    onPhoto = { navController.navigate(Routes.photo(it.id)) },
+                    onConnect = ::openConnect,
+                )
             }
-            composable(Routes.SETTINGS) { SettingsScreen() }
+            composable(Routes.SETTINGS) {
+                SettingsScreen(onConnect = ::openConnect)
+            }
             composable(Routes.ARCHIVE) {
                 LibraryScreen(
                     query = PhotoQuery(archived = true),
                     title = "Archive",
                     onPhoto = { navController.navigate(Routes.photo(it.id)) },
+                    onConnect = ::openConnect,
                 )
             }
             composable(Routes.FOLDERS) {
-                CoverBrowseScreen(title = "Folders", kind = BrowseKind.Folders) {
+                CoverBrowseScreen(
+                    title = "Folders",
+                    kind = BrowseKind.Folders,
+                    onConnect = ::openConnect,
+                ) {
                     navController.navigate(it.browseRoute())
                 }
             }
@@ -241,7 +281,9 @@ private fun SignedInApp(onEnqueue: (List<Uri>) -> Unit) {
                 }
             }
             composable(Routes.CALENDAR) {
-                CalendarScreen { year, month -> navController.navigate(monthRoute(year, month)) }
+                CalendarScreen(onConnect = ::openConnect) { year, month ->
+                    navController.navigate(monthRoute(year, month))
+                }
             }
             composable(
                 Routes.PHOTO,
@@ -253,7 +295,10 @@ private fun SignedInApp(onEnqueue: (List<Uri>) -> Unit) {
                 Routes.ALBUM,
                 arguments = listOf(navArgument("id") { type = NavType.StringType }),
             ) {
-                AlbumDetailScreen(onPhoto = { navController.navigate(Routes.photo(it.id)) })
+                AlbumDetailScreen(
+                    onPhoto = { navController.navigate(Routes.photo(it.id)) },
+                    onConnect = ::openConnect,
+                )
             }
             composable(
                 Routes.BROWSE,
@@ -276,6 +321,7 @@ private fun SignedInApp(onEnqueue: (List<Uri>) -> Unit) {
                     query = query,
                     title = query.title ?: "Library",
                     onPhoto = { navController.navigate(Routes.photo(it.id)) },
+                    onConnect = ::openConnect,
                 )
             }
         }
@@ -284,8 +330,10 @@ private fun SignedInApp(onEnqueue: (List<Uri>) -> Unit) {
 
 @Composable
 private fun LibraryHeader(
+    local: Boolean,
     onSearch: () -> Unit,
     onCamera: () -> Unit,
+    onConnect: () -> Unit,
 ) {
     Row(
         Modifier.fillMaxWidth().padding(start = 8.dp, end = 4.dp, top = 4.dp),
@@ -293,8 +341,14 @@ private fun LibraryHeader(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text("Library", color = BurtonIvory, modifier = Modifier.padding(start = 8.dp).weight(1f))
-        IconButton(onClick = onCamera) {
-            Icon(Icons.Outlined.PhotoCamera, contentDescription = "Camera", tint = BurtonIvory)
+        if (local) {
+            TextButton(onClick = onConnect) {
+                Text("Connect")
+            }
+        } else {
+            IconButton(onClick = onCamera) {
+                Icon(Icons.Outlined.PhotoCamera, contentDescription = "Camera", tint = BurtonIvory)
+            }
         }
         IconButton(onClick = onSearch) {
             Icon(Icons.Rounded.Search, contentDescription = "Search", tint = BurtonIvory)

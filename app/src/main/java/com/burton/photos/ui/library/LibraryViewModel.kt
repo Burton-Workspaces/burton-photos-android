@@ -9,6 +9,7 @@ import com.burton.photos.domain.UploadJob
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -23,6 +24,9 @@ class LibraryViewModel @Inject constructor(
         LibrarySnapshot(),
     )
     val uploads: StateFlow<List<UploadJob>> = repository.uploads.jobs
+    val local: StateFlow<Boolean> = repository.sessionState
+        .map { it.isLocal }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), repository.isLocal)
 
     fun mediaUrl(path: String?) = repository.mediaUrl(path)
 

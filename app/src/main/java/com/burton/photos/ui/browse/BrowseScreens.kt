@@ -16,6 +16,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.Label
 import androidx.compose.material.icons.outlined.Archive
 import androidx.compose.material.icons.outlined.CalendarMonth
+import androidx.compose.material.icons.outlined.Cloud
 import androidx.compose.material.icons.outlined.Folder
 import androidx.compose.material.icons.outlined.People
 import androidx.compose.material.icons.outlined.Place
@@ -38,21 +39,33 @@ import com.burton.photos.domain.CoverItem
 import com.burton.photos.domain.PhotoQuery
 import com.burton.photos.ui.components.AuthImage
 import com.burton.photos.ui.components.ScreenMessage
+import com.burton.photos.ui.local.MediaAccessGate
 import com.burton.photos.ui.navigation.Routes
 import com.burton.photos.ui.theme.BurtonIvory
 import com.burton.photos.ui.theme.BurtonLine
 import com.burton.photos.ui.theme.BurtonMute
 
 @Composable
-fun MoreScreen(onRoute: (String) -> Unit) {
+fun MoreScreen(
+    local: Boolean,
+    onRoute: (String) -> Unit,
+    onConnect: () -> Unit,
+) {
     Column(Modifier.fillMaxSize()) {
         Text("More", color = BurtonIvory, modifier = Modifier.padding(16.dp))
+        if (local) {
+            moreRow("Connect to a server", Icons.Outlined.Cloud) { onConnect() }
+        }
         moreRow("Folders", Icons.Outlined.Folder) { onRoute(Routes.FOLDERS) }
-        moreRow("Labels", Icons.AutoMirrored.Outlined.Label) { onRoute(Routes.LABELS) }
-        moreRow("People", Icons.Outlined.People) { onRoute(Routes.PEOPLE) }
-        moreRow("Moments", Icons.Outlined.Place) { onRoute(Routes.MOMENTS) }
+        if (!local) {
+            moreRow("Labels", Icons.AutoMirrored.Outlined.Label) { onRoute(Routes.LABELS) }
+            moreRow("People", Icons.Outlined.People) { onRoute(Routes.PEOPLE) }
+            moreRow("Moments", Icons.Outlined.Place) { onRoute(Routes.MOMENTS) }
+        }
         moreRow("Calendar", Icons.Outlined.CalendarMonth) { onRoute(Routes.CALENDAR) }
-        moreRow("Archive", Icons.Outlined.Archive) { onRoute(Routes.ARCHIVE) }
+        if (!local) {
+            moreRow("Archive", Icons.Outlined.Archive) { onRoute(Routes.ARCHIVE) }
+        }
         moreRow("Settings", Icons.Outlined.Settings) { onRoute(Routes.SETTINGS) }
     }
 }
@@ -73,32 +86,36 @@ fun CoverBrowseScreen(
     title: String,
     kind: BrowseKind,
     viewModel: BrowseViewModel = hiltViewModel(),
+    onConnect: (() -> Unit)? = null,
     onItem: (CoverItem) -> Unit,
 ) {
     val items by viewModel.items.collectAsStateWithLifecycle()
     val error by viewModel.error.collectAsStateWithLifecycle()
-    LaunchedEffect(kind) { viewModel.load(kind) }
-    Column(Modifier.fillMaxSize()) {
-        Text(title, color = BurtonIvory, modifier = Modifier.padding(16.dp))
-        error?.let { Text(it, color = BurtonMute, modifier = Modifier.padding(16.dp)) }
-        if (items.isEmpty() && error == null) {
-            ScreenMessage("Nothing here yet")
-        } else {
-            LazyVerticalGrid(
-                columns = GridCells.Adaptive(160.dp),
-                modifier = Modifier.fillMaxSize().padding(8.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                items(items, key = { it.id }) { item ->
-                    Column(Modifier.clickable { onItem(item) }) {
-                        AuthImage(
-                            url = viewModel.mediaUrl(item.coverUrl),
-                            contentDescription = item.title,
-                            modifier = Modifier.aspectRatio(1f),
-                        )
-                        Text(item.title, color = BurtonIvory, modifier = Modifier.padding(top = 6.dp))
-                        Text("${item.count} photos", color = BurtonMute)
+    val local by viewModel.local.collectAsStateWithLifecycle()
+    MediaAccessGate(required = local, onConnect = onConnect) {
+        LaunchedEffect(kind) { viewModel.load(kind) }
+        Column(Modifier.fillMaxSize()) {
+            Text(title, color = BurtonIvory, modifier = Modifier.padding(16.dp))
+            error?.let { Text(it, color = BurtonMute, modifier = Modifier.padding(16.dp)) }
+            if (items.isEmpty() && error == null) {
+                ScreenMessage("Nothing here yet")
+            } else {
+                LazyVerticalGrid(
+                    columns = GridCells.Adaptive(160.dp),
+                    modifier = Modifier.fillMaxSize().padding(8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    items(items, key = { it.id }) { item ->
+                        Column(Modifier.clickable { onItem(item) }) {
+                            AuthImage(
+                                url = viewModel.mediaUrl(item.coverUrl),
+                                contentDescription = item.title,
+                                modifier = Modifier.aspectRatio(1f),
+                            )
+                            Text(item.title, color = BurtonIvory, modifier = Modifier.padding(top = 6.dp))
+                            Text("${item.count} photos", color = BurtonMute)
+                        }
                     }
                 }
             }
@@ -109,26 +126,30 @@ fun CoverBrowseScreen(
 @Composable
 fun CalendarScreen(
     viewModel: BrowseViewModel = hiltViewModel(),
+    onConnect: (() -> Unit)? = null,
     onMonth: (year: String, month: String) -> Unit,
 ) {
     val years by viewModel.years.collectAsStateWithLifecycle()
     val error by viewModel.error.collectAsStateWithLifecycle()
-    LaunchedEffect(Unit) { viewModel.loadCalendar() }
-    Column(Modifier.fillMaxSize()) {
-        Text("Calendar", color = BurtonIvory, modifier = Modifier.padding(16.dp))
-        error?.let { Text(it, color = BurtonMute, modifier = Modifier.padding(16.dp)) }
-        LazyColumn(Modifier.fillMaxSize()) {
-            items(years, key = { it.year }) { year ->
-                Text(year.year, color = BurtonIvory, modifier = Modifier.padding(16.dp, 12.dp))
-                year.months.forEach { month ->
-                    ListItem(
-                        headlineContent = { Text("Month ${month.month}", color = BurtonIvory) },
-                        supportingContent = { Text("${month.count} photos", color = BurtonMute) },
-                        colors = ListItemDefaults.colors(containerColor = Color.Transparent),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { onMonth(year.year, month.month) },
-                    )
+    val local by viewModel.local.collectAsStateWithLifecycle()
+    MediaAccessGate(required = local, onConnect = onConnect) {
+        LaunchedEffect(Unit) { viewModel.loadCalendar() }
+        Column(Modifier.fillMaxSize()) {
+            Text("Calendar", color = BurtonIvory, modifier = Modifier.padding(16.dp))
+            error?.let { Text(it, color = BurtonMute, modifier = Modifier.padding(16.dp)) }
+            LazyColumn(Modifier.fillMaxSize()) {
+                items(years, key = { it.year }) { year ->
+                    Text(year.year, color = BurtonIvory, modifier = Modifier.padding(16.dp, 12.dp))
+                    year.months.forEach { month ->
+                        ListItem(
+                            headlineContent = { Text("Month ${month.month}", color = BurtonIvory) },
+                            supportingContent = { Text("${month.count} photos", color = BurtonMute) },
+                            colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { onMonth(year.year, month.month) },
+                        )
+                    }
                 }
             }
         }

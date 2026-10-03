@@ -8,7 +8,10 @@ import com.burton.photos.domain.SessionState
 import com.burton.photos.domain.User
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -22,6 +25,9 @@ class SettingsViewModel @Inject constructor(
     val mode: StateFlow<String> = _mode
     private val _health = MutableStateFlow<Health?>(null)
     val health: StateFlow<Health?> = _health
+    val local: StateFlow<Boolean> = repository.sessionState
+        .map { it.isLocal }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), repository.isLocal)
 
     init {
         viewModelScope.launch {
@@ -29,11 +35,15 @@ class SettingsViewModel @Inject constructor(
                 if (state is SessionState.SignedIn) {
                     _user.value = state.user
                     _mode.value = state.mode
+                    if (_health.value == null) {
+                        _health.value = runCatching { repository.health() }.getOrNull()
+                    }
+                } else {
+                    _user.value = null
+                    _mode.value = ""
+                    _health.value = null
                 }
             }
-        }
-        viewModelScope.launch {
-            _health.value = runCatching { repository.health() }.getOrNull()
         }
     }
 

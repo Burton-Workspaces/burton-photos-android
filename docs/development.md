@@ -33,12 +33,13 @@ app/src/main/java/com/burton/photos/
   MainActivity.kt              nav, picker, camera capture
   data/api/                    OkHttp client, Bearer interceptor
   data/parse/                  TinyJson + PhotosJson
+  data/local/                  MediaStore camera roll
   data/prefs/                  DataStore session
   data/upload/                 JPEG convert + queue
   data/repository/             PhotosRepository
   domain/                      models
-  ui/login, library, viewer, albums, browse, search, settings, theme
-app/src/test/java/…            JSON, query, HEIC helper tests (no device)
+  ui/login, library, viewer, albums, browse, search, settings, local, theme
+app/src/test/java/…            JSON, query, local ids, HEIC helper tests (no device)
 ```
 
 Parser tests cover auth config, native login JSON (`token`), photo pages, albums, and query-string building. Run those before changing network parsing.

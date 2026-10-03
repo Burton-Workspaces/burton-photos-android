@@ -3,11 +3,15 @@ package com.burton.photos.ui.viewer
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.burton.photos.data.local.LocalIds
 import com.burton.photos.data.repository.PhotosRepository
 import com.burton.photos.domain.Photo
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -21,6 +25,13 @@ class PhotoViewModel @Inject constructor(
     val photo: StateFlow<Photo?> = _photo
     private val _error = MutableStateFlow<String?>(null)
     val error: StateFlow<String?> = _error
+    val local: StateFlow<Boolean> = repository.sessionState
+        .map { it.isLocal || LocalIds.isPhoto(id) }
+        .stateIn(
+            viewModelScope,
+            SharingStarted.WhileSubscribed(5_000),
+            repository.isLocal || LocalIds.isPhoto(id),
+        )
 
     init {
         viewModelScope.launch {

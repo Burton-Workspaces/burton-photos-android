@@ -11,7 +11,7 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 data class LoginUi(
-    val baseUrl: String = "http://10.0.2.2:8787",
+    val baseUrl: String = "",
     val email: String = "",
     val password: String = "",
     val name: String = "",
@@ -27,6 +27,15 @@ class LoginViewModel @Inject constructor(
 ) : ViewModel() {
     private val _ui = MutableStateFlow(LoginUi())
     val ui: StateFlow<LoginUi> = _ui
+
+    init {
+        viewModelScope.launch {
+            val origin = repository.savedOrigin()
+            if (origin.isNotBlank()) {
+                _ui.value = _ui.value.copy(baseUrl = origin)
+            }
+        }
+    }
 
     fun setBaseUrl(value: String) {
         _ui.value = _ui.value.copy(baseUrl = value, error = null)

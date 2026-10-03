@@ -3,6 +3,8 @@ package com.burton.photos.data.repository
 import com.burton.photos.data.api.ApiException
 import com.burton.photos.data.api.PhotosApi
 import com.burton.photos.data.api.SessionStore
+import com.burton.photos.data.local.LocalGallery
+import com.burton.photos.data.local.LocalIds
 import com.burton.photos.data.prefs.LocalPrefs
 import com.burton.photos.data.upload.UploadQueue
 import com.burton.photos.domain.Album
@@ -34,6 +36,7 @@ class PhotosRepository @Inject constructor(
     private val api: PhotosApi,
     private val prefs: LocalPrefs,
     private val session: SessionStore,
+    private val local: LocalGallery,
     val uploads: UploadQueue,
 ) {
     private val _session = MutableStateFlow<SessionState>(SessionState.Unknown)
@@ -48,10 +51,12 @@ class PhotosRepository @Inject constructor(
     var lastConfig: AuthConfig? = null
         private set
 
+    val isLocal: Boolean get() = _session.value.isLocal
+
     suspend fun start() {
         val stored = prefs.load()
         if (stored == null) {
-            _session.value = SessionState.SignedOut(null)
+            goLocal()
             return
         }
         session.baseUrl = stored.baseUrl
@@ -69,14 +74,17 @@ class PhotosRepository @Inject constructor(
             if (error is ApiException && error.code == 401) {
                 prefs.clearSession()
                 session.token = null
-                _session.value = SessionState.SignedOut(runCatching { api.authConfig() }.getOrNull())
+                lastConfig = runCatching { api.authConfig() }.getOrNull()
+                goLocal()
             } else if (stored.user != null) {
                 _session.value = SessionState.SignedIn(stored.user, stored.mode)
             } else {
-                _session.value = SessionState.SignedOut(null)
+                goLocal()
             }
         }
     }
+
+    suspend fun savedOrigin(): String = prefs.origin()
 
     suspend fun probe(baseUrl: String): AuthConfig {
         session.baseUrl = baseUrl.trim().trimEnd('/')
@@ -109,15 +117,13 @@ class PhotosRepository @Inject constructor(
         runCatching { api.logout() }
         prefs.clearSession()
         session.token = null
-        _library.value = LibrarySnapshot()
-        _albums.value = emptyList()
-        _session.value = SessionState.SignedOut(lastConfig)
+        goLocal()
     }
 
     suspend fun refreshLibrary(query: PhotoQuery) {
         _library.update { it.copy(query = query, loading = true, error = null, photos = emptyList(), total = 0) }
         try {
-            val page = api.photos(query, PAGE, 0)
+            val page = loadPage(query, PAGE, 0)
             _library.update {
                 it.copy(photos = page.photos, total = page.total, loading = false, error = null)
             }
@@ -131,7 +137,7 @@ class PhotosRepository @Inject constructor(
         if (snap.loading || snap.loadingMore || snap.photos.size >= snap.total) return
         _library.update { it.copy(loadingMore = true) }
         try {
-            val page = api.photos(snap.query, PAGE, snap.photos.size)
+            val page = loadPage(snap.query, PAGE, snap.photos.size)
             _library.update {
                 it.copy(
                     photos = it.photos + page.photos,
@@ -144,38 +150,48 @@ class PhotosRepository @Inject constructor(
         }
     }
 
-    suspend fun photo(id: String): Photo = api.photo(id)
+    suspend fun photo(id: String): Photo =
+        if (useLocal || LocalIds.isPhoto(id)) local.photo(id) else api.photo(id)
 
     suspend fun toggleFavorite(photo: Photo): Photo {
+        requireServer()
         val next = api.patchPhoto(photo.id, mapOf("favorite" to !photo.favorite))
         replace(next)
         return next
     }
 
     suspend fun toggleArchive(photo: Photo): Photo {
+        requireServer()
         val next = api.patchPhoto(photo.id, mapOf("archived" to !photo.archived))
         replace(next)
         return next
     }
 
     suspend fun refreshAlbums() {
-        _albums.value = runCatching { api.albums() }.getOrDefault(emptyList())
+        _albums.value = runCatching {
+            if (useLocal) local.albums() else api.albums()
+        }.getOrDefault(emptyList())
     }
 
-    suspend fun album(id: String): Album = api.album(id)
+    suspend fun album(id: String): Album =
+        if (useLocal || LocalIds.isBucket(id)) local.album(id) else api.album(id)
 
     suspend fun createAlbum(title: String): Album {
+        requireServer()
         val album = api.createAlbum(title)
         refreshAlbums()
         return album
     }
 
-    suspend fun folders(): List<CoverItem> = api.folders()
-    suspend fun labels(): List<CoverItem> = api.labels()
-    suspend fun people(): List<CoverItem> = api.people()
-    suspend fun moments(): List<CoverItem> = api.moments()
-    suspend fun calendar(): List<CalendarYear> = api.calendar()
-    suspend fun health(): Health = api.health()
+    suspend fun folders(): List<CoverItem> = if (useLocal) local.folders() else api.folders()
+    suspend fun labels(): List<CoverItem> = serverOnly { api.labels() }
+    suspend fun people(): List<CoverItem> = serverOnly { api.people() }
+    suspend fun moments(): List<CoverItem> = serverOnly { api.moments() }
+    suspend fun calendar(): List<CalendarYear> = if (useLocal) local.calendar() else api.calendar()
+    suspend fun health(): Health {
+        requireServer()
+        return api.health()
+    }
 
     fun mediaUrl(path: String?): String? = session.absolute(path)
 
@@ -186,6 +202,27 @@ class PhotosRepository @Inject constructor(
         _session.value = SessionState.SignedIn(user, mode)
         refreshLibrary(PhotoQuery())
         refreshAlbums()
+    }
+
+    private suspend fun goLocal() {
+        _session.value = SessionState.Local
+        _library.value = LibrarySnapshot()
+        _albums.value = emptyList()
+        runCatching { refreshAlbums() }
+    }
+
+    private suspend fun loadPage(query: PhotoQuery, limit: Int, offset: Int) =
+        if (useLocal) local.photos(query, limit, offset) else api.photos(query, limit, offset)
+
+    private val useLocal: Boolean get() = _session.value.isLocal
+
+    private fun requireServer() {
+        if (useLocal) error("Connect to a Burton Photos server to use this.")
+    }
+
+    private suspend fun <T> serverOnly(block: suspend () -> T): T {
+        requireServer()
+        return block()
     }
 
     private fun replace(photo: Photo) {

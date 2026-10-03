@@ -19,7 +19,7 @@ import com.burton.photos.ui.library.LibraryScreen
 import com.burton.photos.ui.theme.BurtonIvory
 
 @Composable
-fun SearchScreen(onPhoto: (Photo) -> Unit) {
+fun SearchScreen(onPhoto: (Photo) -> Unit, onConnect: (() -> Unit)? = null) {
     var q by rememberSaveable { mutableStateOf("") }
     Column(Modifier.fillMaxSize()) {
         Text("Search", color = BurtonIvory, modifier = Modifier.padding(16.dp))
@@ -37,6 +37,7 @@ fun SearchScreen(onPhoto: (Photo) -> Unit) {
                 query = PhotoQuery(q = q),
                 title = "Results",
                 onPhoto = onPhoto,
+                onConnect = onConnect,
             )
         }
     }

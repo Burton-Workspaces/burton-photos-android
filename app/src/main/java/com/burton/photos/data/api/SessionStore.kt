@@ -15,9 +15,17 @@ class SessionStore @Inject constructor() {
 
     fun absolute(path: String?): String? {
         if (path.isNullOrBlank()) return null
-        if (path.startsWith("http://") || path.startsWith("https://")) return path
+        if (hasScheme(path)) return path
         val origin = origin()
         if (origin.isBlank()) return path
         return origin + if (path.startsWith("/")) path else "/$path"
+    }
+
+    companion object {
+        fun hasScheme(path: String): Boolean =
+            path.startsWith("http://") ||
+                path.startsWith("https://") ||
+                path.startsWith("content://") ||
+                path.startsWith("file://")
     }
 }

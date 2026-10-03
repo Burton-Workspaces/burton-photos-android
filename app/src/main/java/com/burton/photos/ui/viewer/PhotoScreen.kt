@@ -37,6 +37,7 @@ fun PhotoScreen(
 ) {
     val photo by viewModel.photo.collectAsStateWithLifecycle()
     val error by viewModel.error.collectAsStateWithLifecycle()
+    val local by viewModel.local.collectAsStateWithLifecycle()
     val current = photo
     if (current == null) {
         ScreenMessage(error ?: "Loading…")
@@ -50,20 +51,22 @@ fun PhotoScreen(
             IconButton(onClick = onBack) {
                 Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Back", tint = BurtonIvory)
             }
-            Row {
-                IconButton(onClick = viewModel::toggleFavorite) {
-                    Icon(
-                        if (current.favorite) Icons.Rounded.Favorite else Icons.Outlined.FavoriteBorder,
-                        contentDescription = "Favorite",
-                        tint = if (current.favorite) BurtonSand else BurtonIvory,
-                    )
-                }
-                IconButton(onClick = viewModel::toggleArchive) {
-                    Icon(
-                        if (current.archived) Icons.Rounded.Unarchive else Icons.Outlined.Archive,
-                        contentDescription = "Archive",
-                        tint = BurtonIvory,
-                    )
+            if (!local) {
+                Row {
+                    IconButton(onClick = viewModel::toggleFavorite) {
+                        Icon(
+                            if (current.favorite) Icons.Rounded.Favorite else Icons.Outlined.FavoriteBorder,
+                            contentDescription = "Favorite",
+                            tint = if (current.favorite) BurtonSand else BurtonIvory,
+                        )
+                    }
+                    IconButton(onClick = viewModel::toggleArchive) {
+                        Icon(
+                            if (current.archived) Icons.Rounded.Unarchive else Icons.Outlined.Archive,
+                            contentDescription = "Archive",
+                            tint = BurtonIvory,
+                        )
+                    }
                 }
             }
         }

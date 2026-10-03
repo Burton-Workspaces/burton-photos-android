@@ -161,6 +161,10 @@ data class UploadJob(
 
 sealed class SessionState {
     data object Unknown : SessionState()
-    data class SignedOut(val config: AuthConfig?) : SessionState()
+    /** No Burton Photos server. The library is this phone's camera roll. */
+    data object Local : SessionState()
     data class SignedIn(val user: User, val mode: String) : SessionState()
+
+    val isLocal: Boolean get() = this is Local
+    val isSignedIn: Boolean get() = this is SignedIn
 }

@@ -29,6 +29,7 @@ import com.burton.photos.ui.theme.BurtonMute
 @Composable
 fun LoginScreen(
     onRegister: () -> Unit,
+    onBack: () -> Unit,
     viewModel: LoginViewModel = hiltViewModel(),
 ) {
     val ui by viewModel.ui.collectAsStateWithLifecycle()
@@ -39,14 +40,18 @@ fun LoginScreen(
             .padding(24.dp),
         verticalArrangement = Arrangement.Center,
     ) {
-        Text("Burton Photos", color = BurtonIvory)
+        Text("Connect a server", color = BurtonIvory)
         Spacer(Modifier.height(8.dp))
-        Text("Enter the library origin, then sign in.", color = BurtonMute)
+        Text(
+            "Optional. Your camera roll already works. Add a Burton Photos origin when you have one.",
+            color = BurtonMute,
+        )
         Spacer(Modifier.height(24.dp))
         OutlinedTextField(
             value = ui.baseUrl,
             onValueChange = viewModel::setBaseUrl,
             label = { Text("Server URL") },
+            placeholder = { Text("https://photos.example") },
             modifier = Modifier.fillMaxWidth(),
             singleLine = true,
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
@@ -94,6 +99,10 @@ fun LoginScreen(
         ui.error?.let {
             Spacer(Modifier.height(16.dp))
             Text(it, color = BurtonDanger)
+        }
+        Spacer(Modifier.height(12.dp))
+        TextButton(onClick = onBack, modifier = Modifier.fillMaxWidth()) {
+            Text("Not now")
         }
     }
 }

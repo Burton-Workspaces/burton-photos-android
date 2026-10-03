@@ -15,6 +15,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -27,58 +28,66 @@ import com.burton.photos.domain.Photo
 import com.burton.photos.ui.components.AuthImage
 import com.burton.photos.ui.components.PhotoGrid
 import com.burton.photos.ui.components.ScreenMessage
+import com.burton.photos.ui.local.MediaAccessGate
 import com.burton.photos.ui.theme.BurtonIvory
 import com.burton.photos.ui.theme.BurtonMute
 
 @Composable
 fun AlbumsScreen(
     onAlbum: (String) -> Unit,
+    onConnect: (() -> Unit)? = null,
     viewModel: AlbumsViewModel = hiltViewModel(),
 ) {
     val albums by viewModel.albums.collectAsStateWithLifecycle()
     val error by viewModel.error.collectAsStateWithLifecycle()
+    val local by viewModel.local.collectAsStateWithLifecycle()
     var title by remember { mutableStateOf("") }
-    Column(Modifier.fillMaxSize()) {
-        Text("Albums", color = BurtonIvory, modifier = Modifier.padding(16.dp))
-        Row(
-            Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            OutlinedTextField(
-                value = title,
-                onValueChange = { title = it },
-                label = { Text("New album") },
-                modifier = Modifier.weight(1f),
-                singleLine = true,
-            )
-            Button(onClick = {
-                viewModel.create(title)
-                title = ""
-            }) {
-                Text("Create")
+    MediaAccessGate(required = local, onConnect = onConnect) {
+        LaunchedEffect(Unit) { viewModel.refresh() }
+        Column(Modifier.fillMaxSize()) {
+            Text("Albums", color = BurtonIvory, modifier = Modifier.padding(16.dp))
+            if (!local) {
+                Row(
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    OutlinedTextField(
+                        value = title,
+                        onValueChange = { title = it },
+                        label = { Text("New album") },
+                        modifier = Modifier.weight(1f),
+                        singleLine = true,
+                    )
+                    Button(onClick = {
+                        viewModel.create(title)
+                        title = ""
+                    }) {
+                        Text("Create")
+                    }
+                }
             }
-        }
-        error?.let { Text(it, color = BurtonMute, modifier = Modifier.padding(16.dp)) }
-        if (albums.isEmpty()) {
-            ScreenMessage("No albums yet")
-        } else {
-            LazyVerticalGrid(
-                columns = GridCells.Adaptive(160.dp),
-                modifier = Modifier.fillMaxSize().padding(8.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                items(albums, key = { it.id }) { album ->
-                    Column(Modifier.clickable { onAlbum(album.id) }) {
-                        AuthImage(
-                            url = viewModel.mediaUrl(album.coverUrl),
-                            contentDescription = album.title,
-                            modifier = Modifier.aspectRatio(1f),
-                        )
-                        Text(album.title, color = BurtonIvory, modifier = Modifier.padding(top = 6.dp))
-                        Text("${album.photoCount} photos", color = BurtonMute)
+            error?.let { Text(it, color = BurtonMute, modifier = Modifier.padding(16.dp)) }
+            if (albums.isEmpty()) {
+                ScreenMessage(if (local) "No folders on this phone" else "No albums yet")
+            } else {
+                LazyVerticalGrid(
+                    columns = GridCells.Adaptive(160.dp),
+                    modifier = Modifier.fillMaxSize().padding(8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    items(albums, key = { it.id }) { album ->
+                        Column(Modifier.clickable { onAlbum(album.id) }) {
+                            AuthImage(
+                                url = viewModel.mediaUrl(album.coverUrl),
+                                contentDescription = album.title,
+                                modifier = Modifier.aspectRatio(1f),
+                            )
+                            Text(album.title, color = BurtonIvory, modifier = Modifier.padding(top = 6.dp))
+                            Text("${album.photoCount} photos", color = BurtonMute)
+                        }
                     }
                 }
             }
@@ -89,25 +98,30 @@ fun AlbumsScreen(
 @Composable
 fun AlbumDetailScreen(
     onPhoto: (Photo) -> Unit,
+    onConnect: (() -> Unit)? = null,
     viewModel: AlbumDetailViewModel = hiltViewModel(),
 ) {
     val album by viewModel.album.collectAsStateWithLifecycle()
     val error by viewModel.error.collectAsStateWithLifecycle()
-    val current = album
-    if (current == null) {
-        ScreenMessage(error ?: "Loading…")
-        return
-    }
-    Column(Modifier.fillMaxSize()) {
-        Text(current.title, color = BurtonIvory, modifier = Modifier.padding(16.dp))
-        PhotoGrid(
-            photos = current.photos,
-            mediaUrl = viewModel::mediaUrl,
-            onPhoto = onPhoto,
-            loading = false,
-            loadingMore = false,
-            onLoadMore = {},
-            emptyText = "Empty album",
-        )
+    val local by viewModel.local.collectAsStateWithLifecycle()
+    MediaAccessGate(required = local, onConnect = onConnect) {
+        LaunchedEffect(Unit) { viewModel.reload() }
+        val current = album
+        if (current == null) {
+            ScreenMessage(error ?: "Loading…")
+            return@MediaAccessGate
+        }
+        Column(Modifier.fillMaxSize()) {
+            Text(current.title, color = BurtonIvory, modifier = Modifier.padding(16.dp))
+            PhotoGrid(
+                photos = current.photos,
+                mediaUrl = viewModel::mediaUrl,
+                onPhoto = onPhoto,
+                loading = false,
+                loadingMore = false,
+                onLoadMore = {},
+                emptyText = "Empty album",
+            )
+        }
     }
 }
