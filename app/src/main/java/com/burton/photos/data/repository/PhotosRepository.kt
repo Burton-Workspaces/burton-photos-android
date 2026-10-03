@@ -150,8 +150,11 @@ class PhotosRepository @Inject constructor(
         }
     }
 
-    suspend fun photo(id: String): Photo =
-        if (useLocal || LocalIds.isPhoto(id)) local.photo(id) else api.photo(id)
+    suspend fun photo(id: String): Photo = when {
+        LocalIds.isPhoto(id) -> local.photo(id)
+        useLocal -> error("Photo not found")
+        else -> api.photo(id)
+    }
 
     suspend fun toggleFavorite(photo: Photo): Photo {
         requireServer()

@@ -11,6 +11,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.outlined.Archive
+import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material.icons.rounded.Favorite
 import androidx.compose.material.icons.rounded.Unarchive
@@ -33,6 +34,7 @@ import com.burton.photos.ui.theme.BurtonSand
 @Composable
 fun PhotoScreen(
     onBack: () -> Unit,
+    onEdit: (String) -> Unit,
     viewModel: PhotoViewModel = hiltViewModel(),
 ) {
     val photo by viewModel.photo.collectAsStateWithLifecycle()
@@ -51,8 +53,11 @@ fun PhotoScreen(
             IconButton(onClick = onBack) {
                 Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Back", tint = BurtonIvory)
             }
-            if (!local) {
-                Row {
+            Row {
+                IconButton(onClick = { onEdit(current.id) }) {
+                    Icon(Icons.Outlined.Edit, contentDescription = "Edit", tint = BurtonIvory)
+                }
+                if (!local) {
                     IconButton(onClick = viewModel::toggleFavorite) {
                         Icon(
                             if (current.favorite) Icons.Rounded.Favorite else Icons.Outlined.FavoriteBorder,

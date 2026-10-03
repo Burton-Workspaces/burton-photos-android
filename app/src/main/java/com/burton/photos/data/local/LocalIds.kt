@@ -11,7 +11,10 @@ object LocalIds {
         return rest != id && rest.isNotEmpty() && rest.all { it.isDigit() }
     }
 
-    fun photoMediaId(id: String): Long = id.removePrefix(PHOTO).toLong()
+    fun photoMediaId(id: String): Long {
+        require(isPhoto(id)) { "Not a local photo id: $id" }
+        return id.removePrefix(PHOTO).toLong()
+    }
 
     fun bucket(bucketId: Long): String = BUCKET + bucketId
 
@@ -20,5 +23,8 @@ object LocalIds {
         return rest != id && rest.isNotEmpty() && rest.all { it.isDigit() }
     }
 
-    fun bucketId(id: String): Long = id.removePrefix(BUCKET).toLong()
+    fun bucketId(id: String): Long {
+        require(isBucket(id)) { "Not a local album id: $id" }
+        return id.removePrefix(BUCKET).toLong()
+    }
 }

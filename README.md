@@ -8,6 +8,7 @@ Signed APKs are published on [GitHub Releases](https://github.com/Burton-Workspa
 
 - **Offline / on this phone** — first launch opens the camera roll; connect a server whenever you want
 - **Library** — paged thumbnail grid; tap a photo for EXIF, favorite, and archive
+- **Edit** — crop, rotate, flip, lighting, and filters; saves a JPEG copy on the phone
 - **Upload** — FAB opens the system picker; the camera button captures a JPEG; HEIC is converted on the phone (server session only)
 - **Albums** — list, create, open (device folders while offline)
 - **Search** — title, filename, place, camera (filename locally)

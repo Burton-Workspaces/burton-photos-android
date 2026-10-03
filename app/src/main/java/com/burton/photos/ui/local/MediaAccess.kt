@@ -42,6 +42,18 @@ fun imagePermissions(): Array<String> = when {
     else -> arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE)
 }
 
+fun writeImagePermissions(): Array<String> =
+    if (Build.VERSION.SDK_INT <= 28) arrayOf(Manifest.permission.WRITE_EXTERNAL_STORAGE)
+    else emptyArray()
+
+fun hasWriteImageAccess(context: Context): Boolean {
+    if (Build.VERSION.SDK_INT >= 29) return true
+    return ContextCompat.checkSelfPermission(
+        context,
+        Manifest.permission.WRITE_EXTERNAL_STORAGE,
+    ) == PackageManager.PERMISSION_GRANTED
+}
+
 fun hasImageAccess(context: Context): Boolean {
     if (Build.VERSION.SDK_INT >= 33) {
         val images = ContextCompat.checkSelfPermission(

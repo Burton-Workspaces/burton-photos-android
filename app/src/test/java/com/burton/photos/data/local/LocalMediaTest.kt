@@ -6,6 +6,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
+import org.junit.Assert.fail
 import org.junit.Test
 
 class LocalIdsTest {
@@ -17,6 +18,12 @@ class LocalIdsTest {
         assertFalse(LocalIds.isPhoto("p1"))
         assertFalse(LocalIds.isPhoto("local-"))
         assertFalse(LocalIds.isPhoto("bucket-9"))
+        try {
+            LocalIds.photoMediaId("bucket-9")
+            fail("bucket ids must not parse as photos")
+        } catch (error: IllegalArgumentException) {
+            assertTrue(error.message!!.contains("bucket-9"))
+        }
     }
 
     @Test

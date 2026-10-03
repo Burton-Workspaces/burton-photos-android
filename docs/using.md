@@ -29,7 +29,7 @@ Without a server, Library is the camera roll. Search still filters by filename. 
 
 ### Viewer
 
-Full image, title, EXIF, labels, and people. On a server, heart toggles favorite and archive / unarchive matches the web app (there is no hard delete). Local photos show filename and date only.
+Full image, title, EXIF, labels, and people. Pencil opens the editor (crop, rotate, flip, lighting, and filters) and **Save** writes a JPEG copy to `Pictures/Burton Photos` — the original is left alone. On a server, heart toggles favorite and archive / unarchive matches the web app (there is no hard delete). Local photos show filename and date only.
 
 ### Albums
 
@@ -65,6 +65,7 @@ Shake the phone, or long-press the version line in Settings. Burton Issues opens
 | --- | --- |
 | Photos / Images | Browse the camera roll in offline mode (Android 13+ `READ_MEDIA_IMAGES`; older `READ_EXTERNAL_STORAGE`) |
 | Selected photos | Android 14+ can grant only the pictures you pick; the grid shows that subset |
+| Write storage (API 28 and older) | Save an edited JPEG into the gallery |
 | Internet | Talk to the Photos API and load thumbs after you connect a server |
 | Photo picker | No extra storage permission for uploads on Android 13+; the system picker grants one-shot access |
 | Camera app | Capture uses `FileProvider` in app cache; the camera app writes the JPEG |
@@ -73,4 +74,4 @@ Cleartext HTTP is allowed so a LAN install without Caddy still works. HTTPS with
 
 ## What lives on the phone
 
-Server URL, session token, and last known user in DataStore (`burton_photos`). Thumbnails are Coil’s HTTP cache. Capture files sit in `cache/captures/` until uploaded. Offline mode reads the system MediaStore; it does not copy your camera roll into the app.
+Server URL, session token, and last known user in DataStore (`burton_photos`). Thumbnails are Coil’s HTTP cache. Capture files sit in `cache/captures/` until uploaded. Offline mode reads the system MediaStore; it does not copy your camera roll into the app. Edited copies are new JPEGs in `Pictures/Burton Photos`.

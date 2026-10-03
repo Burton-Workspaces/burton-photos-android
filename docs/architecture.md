@@ -8,6 +8,7 @@ domain/      Photo, Album, User, PhotoQuery, UploadJob, SessionState
 data/
   api        OkHttp PhotosApi, AuthInterceptor, SessionStore
   local      MediaStore gallery (offline camera roll)
+  edit       Color matrices, crop math, save edited JPEG to MediaStore
   parse      TinyJson + PhotosJson
   prefs      DataStore LocalPrefs
   upload     JpegConverter + sequential UploadQueue
@@ -34,7 +35,9 @@ on every `/api` and `/media` request. Login, register, and `GET /api/auth/me` re
 
 Photo DTOs expose relative `thumbUrl` / `originalUrl`. `SessionStore.absolute` prefixes the configured origin, and leaves `content://` / `file://` / `http(s)` URIs alone so the camera roll loads through Coil. `BurtonPhotosApplication` implements Coil’s `ImageLoaderFactory` so the singleton loader uses the same OkHttp client (Bearer on thumbs). Do not load `/media` with an unauthenticated HTTP stack.
 
-Local photos are MediaStore rows mapped onto the same `Photo` model (`local-{id}`). Folders are buckets (`bucket-{id}`). Favorites use `IS_FAVORITE` on Android 11+.
+Local photos are MediaStore rows mapped onto the same `Photo` model (`local-{id}`). Folders are buckets (`bucket-{id}`). Favorites use `IS_FAVORITE` on Android 11+. Photo and album nav arguments are `photoId` / `albumId` so a folder id is never parsed as a photo.
+
+The editor loads the original (downsampled to 4096px), applies crop / rotate / flip plus a 4×5 color matrix, and inserts a new JPEG under `Pictures/Burton Photos`. It does not overwrite the source or upload the result.
 
 ## Uploads
 
@@ -48,4 +51,4 @@ Engine formats that skip conversion: jpeg, png, webp, gif, tiff.
 
 ## UI shell
 
-Everyone sees the main shell. Library is the start destination. Unsigned users browse the camera roll; **Connect** opens login/register. After sign-in, the bottom bar is Library → Albums → Favorites → More. Upload FAB is on those tabs only while a server session exists. Photo viewer, album detail, search, settings, and browse filters hide the bar (except search/settings/browse keep no FAB when not a bottom tab).
+Everyone sees the main shell. Library is the start destination. Unsigned users browse the camera roll; **Connect** opens login/register. After sign-in, the bottom bar is Library → Albums → Favorites → More. Upload FAB is on those tabs only while a server session exists. Photo viewer, editor, album detail, search, settings, and browse filters hide the bar (except search/settings/browse keep no FAB when not a bottom tab).

@@ -81,6 +81,7 @@ import com.burton.photos.ui.theme.BurtonIvory
 import com.burton.photos.ui.theme.BurtonMute
 import com.burton.photos.ui.theme.BurtonPhotosTheme
 import com.burton.photos.ui.theme.BurtonSand
+import com.burton.photos.ui.editor.EditScreen
 import com.burton.photos.ui.viewer.PhotoScreen
 import dagger.hilt.android.AndroidEntryPoint
 import java.io.File
@@ -299,13 +300,29 @@ private fun GalleryApp(local: Boolean, onEnqueue: (List<Uri>) -> Unit) {
             }
             composable(
                 Routes.PHOTO,
-                arguments = listOf(navArgument("id") { type = NavType.StringType }),
+                arguments = listOf(navArgument("photoId") { type = NavType.StringType }),
             ) {
-                PhotoScreen(onBack = { navController.popBackStack() })
+                PhotoScreen(
+                    onBack = { navController.popBackStack() },
+                    onEdit = { navController.navigate(Routes.edit(it)) },
+                )
+            }
+            composable(
+                Routes.EDIT,
+                arguments = listOf(navArgument("photoId") { type = NavType.StringType }),
+            ) {
+                EditScreen(
+                    onBack = { navController.popBackStack() },
+                    onSaved = { savedId ->
+                        navController.navigate(Routes.photo(savedId)) {
+                            popUpTo(Routes.PHOTO) { inclusive = true }
+                        }
+                    },
+                )
             }
             composable(
                 Routes.ALBUM,
-                arguments = listOf(navArgument("id") { type = NavType.StringType }),
+                arguments = listOf(navArgument("albumId") { type = NavType.StringType }),
             ) {
                 AlbumDetailScreen(
                     onPhoto = { navController.navigate(Routes.photo(it.id)) },

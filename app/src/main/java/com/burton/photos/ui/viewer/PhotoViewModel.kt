@@ -20,7 +20,7 @@ class PhotoViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
     private val repository: PhotosRepository,
 ) : ViewModel() {
-    private val id: String = checkNotNull(savedStateHandle["id"])
+    private val id: String = checkNotNull(savedStateHandle["photoId"])
     private val _photo = MutableStateFlow<Photo?>(null)
     val photo: StateFlow<Photo?> = _photo
     private val _error = MutableStateFlow<String?>(null)

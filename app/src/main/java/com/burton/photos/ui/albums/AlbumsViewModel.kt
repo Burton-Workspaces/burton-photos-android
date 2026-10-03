@@ -62,7 +62,7 @@ class AlbumDetailViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
     private val repository: PhotosRepository,
 ) : ViewModel() {
-    private val id: String = checkNotNull(savedStateHandle["id"])
+    private val id: String = checkNotNull(savedStateHandle["albumId"])
     private val _album = MutableStateFlow<Album?>(null)
     val album: StateFlow<Album?> = _album
     private val _error = MutableStateFlow<String?>(null)

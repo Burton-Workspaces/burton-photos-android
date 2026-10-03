@@ -65,7 +65,11 @@ class LocalGallery @Inject constructor(
     }
 
     suspend fun album(id: String): Album = withContext(Dispatchers.IO) {
-        val bucketId = if (LocalIds.isBucket(id)) LocalIds.bucketId(id) else id.toLong()
+        val bucketId = if (LocalIds.isBucket(id)) {
+            LocalIds.bucketId(id)
+        } else {
+            id.toLongOrNull() ?: error("Album not found")
+        }
         val bucket = buckets().firstOrNull { it.id == bucketId } ?: error("Album not found")
         val filter = LocalMediaQuery.filter(PhotoQuery(folder = bucketId.toString()))
         val photos = queryRows(filter, limit = null, offset = null).map { it.toPhoto() }

@@ -18,13 +18,15 @@ object Routes {
     const val PEOPLE = "people"
     const val MOMENTS = "moments"
     const val CALENDAR = "calendar"
-    const val PHOTO = "photo/{id}"
-    const val ALBUM = "album/{id}"
+    const val PHOTO = "photo/{photoId}"
+    const val ALBUM = "album/{albumId}"
+    const val EDIT = "edit/{photoId}"
     const val BROWSE =
         "browse?title={title}&q={q}&year={year}&month={month}&city={city}&folder={folder}&label={label}&person={person}&album={album}&favorite={favorite}&archived={archived}"
 
     fun photo(id: String): String = "photo/${Uri.encode(id)}"
     fun album(id: String): String = "album/${Uri.encode(id)}"
+    fun edit(id: String): String = "edit/${Uri.encode(id)}"
 
     fun browse(title: String, query: PhotoQuery): String {
         fun enc(value: String?) = Uri.encode(value.orEmpty())
