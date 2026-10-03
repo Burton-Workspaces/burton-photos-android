@@ -1,5 +1,7 @@
 package com.burton.photos.ui.settings
 
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -11,13 +13,16 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.burton.photos.BuildConfig
+import com.burton.photos.report.BurtonIssues
 import com.burton.photos.ui.theme.BurtonIvory
 import com.burton.photos.ui.theme.BurtonMute
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun SettingsScreen(
     onConnect: () -> Unit,
@@ -67,6 +72,14 @@ fun SettingsScreen(
             }
         }
         Spacer(Modifier.height(24.dp))
-        Text("Version ${BuildConfig.VERSION_NAME}", color = BurtonMute)
+        val context = LocalContext.current
+        Text(
+            "Version ${BuildConfig.VERSION_NAME}",
+            color = BurtonMute,
+            modifier = Modifier.combinedClickable(
+                onClick = {},
+                onLongClick = { BurtonIssues.openNewIssue(context) },
+            ),
+        )
     }
 }

@@ -60,6 +60,7 @@ import androidx.navigation.navArgument
 import com.burton.photos.data.repository.PhotosRepository
 import com.burton.photos.domain.PhotoQuery
 import com.burton.photos.domain.SessionState
+import com.burton.photos.report.ShakeToReport
 import com.burton.photos.ui.albums.AlbumDetailScreen
 import com.burton.photos.ui.albums.AlbumsScreen
 import com.burton.photos.ui.browse.BrowseKind
@@ -88,6 +89,7 @@ import javax.inject.Inject
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     @Inject lateinit var repository: PhotosRepository
+    private val shakeToReport by lazy { ShakeToReport(this) }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -97,6 +99,16 @@ class MainActivity : ComponentActivity() {
                 BurtonApp(onEnqueue = { repository.uploads.enqueue(it) })
             }
         }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        shakeToReport.start()
+    }
+
+    override fun onPause() {
+        shakeToReport.stop()
+        super.onPause()
     }
 }
 

@@ -53,7 +53,11 @@ Type two or more characters. Against a server this is the same photo query as th
 
 **On this phone:** connect CTA and app version.
 
-**Signed in:** name and email, auth mode, server origin, API health checks, app version. **Disconnect server** forgets the session and returns to the camera roll.
+**Signed in:** name and email, auth mode, server origin, API health checks, app version. **Disconnect server** forgets the session and returns to the camera roll. Long-press the version line to file an issue.
+
+### File an issue
+
+Shake the phone, or long-press the version line in Settings. Burton Issues opens on New issue with this app already selected. Nothing is posted until you submit; Back cancels.
 
 ## Permissions
 
