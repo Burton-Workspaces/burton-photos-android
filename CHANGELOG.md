@@ -5,6 +5,13 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.0](https://github.com/Burton-Workspaces/burton-photos-android/compare/v0.3.0...v0.4.0) (2026-10-03)
+
+
+### Features
+
+* file issues by shaking or long-pressing About ([e6fd444](https://github.com/Burton-Workspaces/burton-photos-android/commit/e6fd444a16fd01dae551050e378d01999915c73f))
+
 ## [0.3.0](https://github.com/Burton-Workspaces/burton-photos-android/compare/v0.2.0...v0.3.0) (2026-10-03)
 
 
