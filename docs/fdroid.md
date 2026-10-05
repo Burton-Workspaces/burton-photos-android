@@ -6,7 +6,7 @@ This is a **self-hosted simple binary repo** of the same APKs CI already signs. 
 
 Official HOWTO: [Setup an F-Droid App Repo](https://f-droid.org/docs/Setup_an_F-Droid_App_Repo/).
 
-Burton Android apps share one Pages catalog: [Burton-Workspaces/burton-sonos-fdroid](https://github.com/Burton-Workspaces/burton-sonos-fdroid). Publish this APK into that same `repo/` so Droidify users already subscribed keep seeing updates.
+Burton Android apps share one Pages catalog: [Burton-Workspaces/burton-app-dist](https://github.com/Burton-Workspaces/burton-app-dist). Publish this APK into that same `repo/` so Droidify users already subscribed keep seeing updates.
 
 ## Two keys
 
@@ -23,7 +23,7 @@ Keep the repo keystore and `config.yml` private and backed up. Never publish `co
 
 Rotating the **repo** key means every user must re-add the repository. Rotating `release.jks` is worse: Android will refuse APK updates.
 
-Current catalog Fingerprint (from [burton-sonos-fdroid/FINGERPRINT](https://github.com/Burton-Workspaces/burton-sonos-fdroid/blob/main/FINGERPRINT)):
+Current catalog Fingerprint (from [burton-app-dist/FINGERPRINT](https://github.com/Burton-Workspaces/burton-app-dist/blob/main/FINGERPRINT)):
 
 `D517D045B3E2FB297C0EC0BBA17AFF03488A4BB4EF431331A3A1C3FB46A5EFB6`
 
@@ -46,17 +46,17 @@ Do **not** use Debian’s `apt install fdroidserver` (2.2.1). That stack’s And
 
 Set `repo_url` to:
 
-`https://burton-workspaces.github.io/burton-sonos-fdroid/fdroid/repo`
+`https://burton-workspaces.github.io/burton-app-dist/fdroid/repo`
 
-Clone [burton-sonos-fdroid](https://github.com/Burton-Workspaces/burton-sonos-fdroid) **next to** this app repo (`../burton-sonos-fdroid`). Pages is served from `main` at `/`. The `/fdroid/repo` path is filled by the publish script.
+Clone [burton-app-dist](https://github.com/Burton-Workspaces/burton-app-dist) **next to** this app repo (`../rabun-app-dist`). Pages is served from `main` at `/`. The `/fdroid/repo` path is filled by the publish script.
 
 Seed metadata lives in [`fdroid/metadata/com.burton.photos.yml`](../fdroid/metadata/com.burton.photos.yml). The setup/publish scripts copy it into `$FDROID_ROOT/metadata/` if missing.
 
 ## Publish with the Pages script
 
-`scripts/publish-fdroid-pages.sh` copies a signed APK into your private `fdroid` working tree, runs `fdroid update`, then mirrors **only** `repo/` into [burton-sonos-fdroid](https://github.com/Burton-Workspaces/burton-sonos-fdroid) and pushes.
+`scripts/publish-fdroid-pages.sh` copies a signed APK into your private `fdroid` working tree, runs `fdroid update`, then mirrors **only** `repo/` into [burton-app-dist](https://github.com/Burton-Workspaces/burton-app-dist) and pushes.
 
-It will not use this Android repo as the Pages target, and it will not copy `config.yml` or the repo keystore. `FDROID_PAGES_DIR` defaults to `../burton-sonos-fdroid` when that clone exists.
+It will not use this Android repo as the Pages target, and it will not copy `config.yml` or the repo keystore. `FDROID_PAGES_DIR` defaults to `../rabun-app-dist` when that clone exists.
 
 ```bash
 export FDROID_ROOT=~/fdroid
@@ -68,4 +68,4 @@ cp fdroid-pages.env.example fdroid-pages.env   # optional; source it if you want
 
 Add the catalog in Droidify:
 
-`https://burton-workspaces.github.io/burton-sonos-fdroid/fdroid/repo?fingerprint=D517D045B3E2FB297C0EC0BBA17AFF03488A4BB4EF431331A3A1C3FB46A5EFB6`
+`https://burton-workspaces.github.io/burton-app-dist/fdroid/repo?fingerprint=D517D045B3E2FB297C0EC0BBA17AFF03488A4BB4EF431331A3A1C3FB46A5EFB6`

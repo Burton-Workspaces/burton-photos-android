@@ -2,7 +2,7 @@
 
 Android client for a self-hosted [Burton Photos](https://github.com/Burton-Workspaces/burton-photos) library — and a camera-roll gallery when you have no server yet. Browse local photos immediately, then connect an origin later. On a server: timeline, albums, favorite and archive, and **upload** from the gallery or camera.
 
-Signed APKs are published on [GitHub Releases](https://github.com/Burton-Workspaces/burton-photos-android/releases). Droidify / F-Droid: [burton-sonos-fdroid](https://github.com/Burton-Workspaces/burton-sonos-fdroid) (`https://burton-workspaces.github.io/burton-sonos-fdroid/fdroid/repo`).
+Signed APKs are published on [GitHub Releases](https://github.com/Burton-Workspaces/burton-photos-android/releases). Droidify / F-Droid: [burton-app-dist](https://github.com/Burton-Workspaces/burton-app-dist) (`https://burton-workspaces.github.io/burton-app-dist/fdroid/repo`).
 
 ## What it does
 

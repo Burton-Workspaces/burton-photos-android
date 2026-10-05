@@ -7,13 +7,13 @@ usage() {
   cat <<'EOF' >&2
 Usage: scripts/setup-fdroid-and-secrets.sh
 
-Idempotent. Reuses ~/fdroid and ../burton-sonos-fdroid when they already exist.
+Idempotent. Reuses ~/fdroid and ../rabun-app-dist when they already exist.
 Copies a sibling Burton JKS when this repo has no keystore yet, then sets
 KEYSTORE_BASE64 / KEYSTORE_PASSWORD (and KEY_ALIAS / KEY_PASSWORD if needed).
 
 Optional environment:
   FDROID_ROOT           fdroid init directory (default: $HOME/fdroid)
-  FDROID_PAGES_DIR      Pages checkout (default: ../burton-sonos-fdroid)
+  FDROID_PAGES_DIR      Pages checkout (default: ../rabun-app-dist)
   FDROID_REPO_URL       Written into config.yml (default: Burton Pages catalog)
   GH_REPO               owner/name (default: git remote, else Burton-Workspaces/burton-photos-android)
   CREATE_REPO           1 to `gh repo create` when GH_REPO is missing (default: 1)
@@ -31,13 +31,13 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 export PATH="${HOME}/.local/bin:${PATH}"
 
-PAGES_DEFAULT="$(cd "$ROOT/.." && pwd)/burton-sonos-fdroid"
+PAGES_DEFAULT="$(cd "$ROOT/.." && pwd)/rabun-app-dist"
 FDROID_ROOT="${FDROID_ROOT:-$HOME/fdroid}"
 FDROID_PAGES_DIR="${FDROID_PAGES_DIR:-$PAGES_DEFAULT}"
-FDROID_REPO_URL="${FDROID_REPO_URL:-https://burton-workspaces.github.io/burton-sonos-fdroid/fdroid/repo}"
+FDROID_REPO_URL="${FDROID_REPO_URL:-https://burton-workspaces.github.io/burton-app-dist/fdroid/repo}"
 CREATE_REPO="${CREATE_REPO:-1}"
 PACKAGE_ID="com.burton.photos"
-PAGES_REPO="Burton-Workspaces/burton-sonos-fdroid"
+PAGES_REPO="Burton-Workspaces/burton-app-dist"
 
 prop() {
   local file="$1" key="$2"
@@ -150,7 +150,7 @@ find_sibling_keystore() {
     return
   fi
   local sibling
-  for sibling in burton-weather burton-pod burton-slack burton-meeting burton-sonos-android burton-app-hub; do
+  for sibling in burton-app-hub burton-finance burton-groupme burton-issues burton-meeting burton-pod burton-slack burton-sonos-android burton-weather burton-whatsapp-android; do
     if [[ -f "$ROOT/../$sibling/keystore.properties" ]]; then
       printf '%s\n' "$ROOT/../$sibling"
       return
@@ -282,5 +282,5 @@ echo "Pages checkout: $FDROID_PAGES_DIR"
 echo "GitHub repo:    $REPO"
 echo "Publish later with:"
 echo "  source fdroid-pages.env"
-echo "  ./scripts/upload-release-apk.sh \"\$(tr -d '[:space:]' < version.txt)\""
-echo "  ./scripts/publish-fdroid-pages.sh \"\$(tr -d '[:space:]' < version.txt)\""
+echo "  ./scripts/upload-release-apk.sh"
+echo "  ./scripts/publish-fdroid-pages.sh"

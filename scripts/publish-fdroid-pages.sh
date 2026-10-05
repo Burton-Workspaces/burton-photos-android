@@ -2,30 +2,49 @@
 set -euo pipefail
 
 usage() {
-  echo "Usage: $0 <version>" >&2
+  echo "Usage: $0 [version]" >&2
   echo "  version  SemVer matching version.txt, with or without a v prefix (1.0.0 or v1.0.0)" >&2
+  echo "           Defaults to version.txt when omitted." >&2
+  echo >&2
+  echo "Loads fdroid-pages.env from the repo root if that file exists." >&2
   echo >&2
   echo "Required environment:" >&2
   echo "  FDROID_ROOT       Directory from \`fdroid init\` (config.yml + repo keystore)" >&2
   echo >&2
   echo "Optional:" >&2
-  echo "  FDROID_PAGES_DIR    Git checkout of Burton-Workspaces/burton-sonos-fdroid" >&2
-  echo "                      (defaults to ../burton-sonos-fdroid when that clone exists)" >&2
+  echo "  FDROID_PAGES_DIR    Git checkout of Burton-Workspaces/burton-app-dist" >&2
+  echo "                      (defaults to ../rabun-app-dist when that clone exists)" >&2
   echo "  FDROID_PAGES_PUSH   Set to 0 to commit without pushing (default: 1)" >&2
   echo "  FDROID_ASSEMBLE     Set to 1 to always run assembleRelease (default: only if APK is missing)" >&2
   exit 1
 }
 
-[[ $# -eq 1 ]] || usage
+if [[ "${1:-}" == "-h" || "${1:-}" == "--help" ]]; then
+  usage
+fi
+if [[ $# -gt 1 ]]; then
+  usage
+fi
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 export PATH="${HOME}/.local/bin:${PATH}"
 
-raw="$1"
+if [[ -f "$ROOT/fdroid-pages.env" ]]; then
+  set -a
+  # shellcheck disable=SC1091
+  source "$ROOT/fdroid-pages.env"
+  set +a
+fi
+
+if [[ $# -eq 1 ]]; then
+  raw="$1"
+else
+  raw="$(tr -d '[:space:]' < version.txt)"
+fi
 version="${raw#v}"
 if [[ ! "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-  echo "Version must be MAJOR.MINOR.PATCH, got '$raw'" >&2
+  echo "Version must be SemVer 2.0 MAJOR.MINOR.PATCH, got '$raw'" >&2
   exit 1
 fi
 
@@ -36,14 +55,14 @@ if [[ "$version" != "$actual" ]]; then
 fi
 
 if [[ -z "${FDROID_PAGES_DIR:-}" ]]; then
-  sibling="$(cd "$ROOT/.." && pwd)/burton-sonos-fdroid"
+  sibling="$(cd "$ROOT/.." && pwd)/rabun-app-dist"
   if [[ -d "$sibling/.git" ]]; then
     FDROID_PAGES_DIR="$sibling"
   fi
 fi
 
-: "${FDROID_ROOT:?Set FDROID_ROOT to the directory created by fdroid init}"
-: "${FDROID_PAGES_DIR:?Clone Burton-Workspaces/burton-sonos-fdroid next to this repo, or set FDROID_PAGES_DIR}"
+: "${FDROID_ROOT:?Set FDROID_ROOT to the directory created by fdroid init (or put it in fdroid-pages.env)}"
+: "${FDROID_PAGES_DIR:?Clone Burton-Workspaces/burton-app-dist next to this repo, or set FDROID_PAGES_DIR}"
 
 FDROID_ROOT="$(cd "$FDROID_ROOT" && pwd)"
 FDROID_PAGES_DIR="$(cd "$FDROID_PAGES_DIR" && pwd)"
@@ -90,27 +109,32 @@ if [[ "${FDROID_ASSEMBLE:-0}" == 1 || ! -f "$apk" ]]; then
   cp app/build/outputs/apk/release/app-release.apk "$apk"
 fi
 
-mkdir -p "$FDROID_ROOT/repo"
+mkdir -p "$FDROID_ROOT/repo" "$FDROID_ROOT/metadata"
 cp "$apk" "$FDROID_ROOT/repo/"
 
-package_id="com.burton.photos"
+meta_src="$ROOT/fdroid/metadata/com.burton.photos.yml"
+meta_dst="$FDROID_ROOT/metadata/com.burton.photos.yml"
+if [[ -f "$meta_src" && ! -f "$meta_dst" ]]; then
+  cp "$meta_src" "$meta_dst"
+fi
+graphics_src="$ROOT/fdroid/metadata/com.burton.photos"
+if [[ -d "$graphics_src" ]]; then
+  mkdir -p "$FDROID_ROOT/metadata/com.burton.photos"
+  if command -v rsync >/dev/null; then
+    rsync -a "$graphics_src/" "$FDROID_ROOT/metadata/com.burton.photos/"
+  else
+    cp -a "$graphics_src/." "$FDROID_ROOT/metadata/com.burton.photos/"
+  fi
+fi
+
 (
   cd "$FDROID_ROOT"
-  # Always --create-metadata: a shared catalog already has YAML for other
-  # apps (Sonos, Slack, …). Plain `fdroid update` then ignores a new APK.
   if ! fdroid update --create-metadata; then
     echo "fdroid update failed. If you saw 'res1 must be zero', Debian's androguard is too old for this APK." >&2
     echo "  pipx install fdroidserver && export PATH=\"\$HOME/.local/bin:\$PATH\"" >&2
     exit 1
   fi
 )
-
-index_xml="$FDROID_ROOT/repo/index.xml"
-if [[ ! -f "$index_xml" ]] || ! grep -q "$package_id" "$index_xml"; then
-  echo "fdroid update did not index $package_id." >&2
-  echo "Create $FDROID_ROOT/metadata/${package_id}.yml (name, license, summary) and re-run." >&2
-  exit 1
-fi
 
 public="$FDROID_PAGES_DIR/fdroid/repo"
 mkdir -p "$public"
@@ -132,10 +156,9 @@ if [[ -f "$index_jar" ]] && command -v openssl >/dev/null; then
       unzip -p "$index_jar" "$rsa_entry" \
         | openssl pkcs7 -inform DER -print_certs 2>/dev/null \
         | openssl x509 -noout -fingerprint -sha256 2>/dev/null \
+        | sed 's/^SHA256 Fingerprint=//' \
         | tr -d ': \n' \
-        | tr '[:lower:]' '[:upper:]' \
-        | grep -oE '[A-F0-9]{64}' \
-        | head -n1
+        | tr '[:lower:]' '[:upper:]'
     )" || fingerprint=""
   fi
 fi

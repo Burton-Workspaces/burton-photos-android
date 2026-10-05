@@ -58,7 +58,7 @@ Do **not** hand-edit `version.txt` to invent a new number. After a `feat:` / `fi
 ./scripts/setup-fdroid-and-secrets.sh
 ```
 
-That script is idempotent. It reuses `~/fdroid` and `../burton-sonos-fdroid` when they already exist, copies a sibling Burton JKS if this repo has no keystore yet, creates `Burton-Workspaces/burton-photos-android` if needed, and writes `KEYSTORE_BASE64` / `KEYSTORE_PASSWORD`.
+That script is idempotent. It reuses `~/fdroid` and `../rabun-app-dist` when they already exist, copies a sibling Burton JKS if this repo has no keystore yet, creates `Burton-Workspaces/burton-photos-android` if needed, and writes `KEYSTORE_BASE64` / `KEYSTORE_PASSWORD`.
 
 ### Publish a version
 
